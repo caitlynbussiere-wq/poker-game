@@ -8,7 +8,8 @@ let isHost = false;
 let myId   = null;
 let gamePlayers = [];
 let isSpectator = false;
-const TURN_TIME = 20;
+let currentBigBlind = 50;
+const TURN_TIME = 30;
 
 // ─── Audio Engine ─────────────────────────────────────────
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -77,6 +78,27 @@ function playWin() {
   } catch(e) {}
 }
 
+// ─── Raise Slider ─────────────────────────────────────────
+const raiseSlider = document.getElementById('raiseSlider');
+const raiseAmountDisplay = document.getElementById('raiseAmountDisplay');
+
+raiseSlider.addEventListener('input', () => {
+  raiseAmountDisplay.textContent = `Raise: ${parseInt(raiseSlider.value).toLocaleString()}`;
+  document.getElementById('raiseBtn').textContent = `Raise ${parseInt(raiseSlider.value).toLocaleString()}`;
+});
+
+function updateSlider(bigBlind, myChips) {
+  const min = bigBlind;
+  const max = myChips;
+  raiseSlider.min = min;
+  raiseSlider.max = max;
+  raiseSlider.value = min;
+  raiseAmountDisplay.textContent = `Raise: ${min.toLocaleString()}`;
+  document.getElementById('raiseBtn').textContent = `Raise ${min.toLocaleString()}`;
+  document.getElementById('sliderMin').textContent = `Min: ${min.toLocaleString()}`;
+  document.getElementById('sliderMax').textContent = `Max: ${max.toLocaleString()}`;
+}
+
 // ─── Lobby ───────────────────────────────────────────────
 joinBtn.addEventListener('click', () => {
   const name = nameInput.value.trim();
@@ -120,6 +142,7 @@ socket.on('blindTimer', ({ timeRemaining, currentSmall, currentBig, nextSmall, n
   const mins = Math.floor(timeRemaining / 60);
   const secs = String(timeRemaining % 60).padStart(2, '0');
   const el = document.getElementById('blindTimerDisplay');
+  currentBigBlind = currentBig;
   if (el) {
     el.innerHTML = `
       <span class="blind-current">Blinds: ${currentSmall}/${currentBig}</span>
@@ -131,16 +154,38 @@ socket.on('blindTimer', ({ timeRemaining, currentSmall, currentBig, nextSmall, n
 });
 
 socket.on('blindsIncreased', ({ small, big }) => {
+  currentBigBlind = big;
   showBanner(`Blinds increased to ${small}/${big}!`, '#e67e22');
 });
 
 socket.on('logMessage', ({ msg, type }) => addLog(msg, type));
 
+// ─── Action Notifications ─────────────────────────────────
+socket.on('playerActionNotif', ({ playerId, text, type }) => {
+  const seat = document.getElementById(`seat-${playerId}`);
+  if (!seat) return;
+  const wrap = seat.closest('.seat-wrap');
+  if (!wrap) return;
+
+  // Remove existing notif
+  const existing = wrap.querySelector('.action-notif');
+  if (existing) existing.remove();
+
+  const notif = document.createElement('div');
+  notif.classList.add('action-notif', type);
+  notif.textContent = text;
+  wrap.insertBefore(notif, wrap.firstChild);
+
+  // Remove after 2.5 seconds
+  setTimeout(() => notif.remove(), 2500);
+});
+
 // ─── Game State ───────────────────────────────────────────
-socket.on('gameState', ({ players, communityCards, pot, currentPlayerId, currentBet, round, myId: id }) => {
+socket.on('gameState', ({ players, communityCards, pot, currentPlayerId, currentBet, round, myId: id, bigBlind }) => {
   if (isSpectator) return;
   myId = id;
   gamePlayers = players;
+  if (bigBlind) currentBigBlind = bigBlind;
 
   document.getElementById('roundLabel').textContent = round.toUpperCase();
   document.getElementById('potLabel').textContent   = `Pot: ${pot.toLocaleString()}`;
@@ -149,15 +194,8 @@ socket.on('gameState', ({ players, communityCards, pot, currentPlayerId, current
 
   const me = players.find(p => p.id === myId);
   if (me && me.cards) {
-    // Reset cards before rendering new ones
-    document.querySelectorAll('.my-card').forEach(c => {
-      c.className = 'my-card empty';
-      c.innerHTML = '';
-    });
-    document.querySelectorAll('.community-card').forEach(c => {
-      c.className = 'community-card empty';
-      c.innerHTML = '';
-    });
+    document.querySelectorAll('.my-card').forEach(c => { c.className = 'my-card empty'; c.innerHTML = ''; });
+    document.querySelectorAll('.community-card').forEach(c => { c.className = 'community-card empty'; c.innerHTML = ''; });
     renderMyCards(me.cards);
   }
 
@@ -166,19 +204,20 @@ socket.on('gameState', ({ players, communityCards, pot, currentPlayerId, current
   const isMyTurn = currentPlayerId === myId;
   document.getElementById('actionButtons').classList.toggle('hidden', !isMyTurn);
 
-  if (isMyTurn) {
-    const myBet = me?.bet || 0;
+  if (isMyTurn && me) {
+    const myBet = me.bet || 0;
     const callAmount = currentBet - myBet;
     document.getElementById('checkBtn').classList.toggle('hidden', callAmount > 0);
     document.getElementById('callBtn').classList.toggle('hidden', callAmount === 0);
     document.getElementById('callBtn').textContent = `Call ${callAmount}`;
     const allInBtn = document.getElementById('allInBtn');
-    if (me && me.chips > 0) {
+    if (me.chips > 0) {
       allInBtn.classList.remove('hidden');
       allInBtn.textContent = `All In (${me.chips.toLocaleString()})`;
     } else {
       allInBtn.classList.add('hidden');
     }
+    updateSlider(currentBigBlind, me.chips);
   }
 });
 
@@ -223,16 +262,8 @@ socket.on('turnTimer', ({ timeLeft, playerId }) => {
 
 // ─── Round Over ───────────────────────────────────────────
 socket.on('roundOver', ({ winnerIds, winnerNames, pot, showdown }) => {
-  // Reset all cards for next round
-  document.querySelectorAll('.community-card').forEach(c => {
-    c.className = 'community-card empty';
-    c.innerHTML = '';
-  });
-  document.querySelectorAll('.my-card').forEach(c => {
-    c.className = 'my-card empty';
-    c.innerHTML = '';
-  });
-
+  document.querySelectorAll('.community-card').forEach(c => { c.className = 'community-card empty'; c.innerHTML = ''; });
+  document.querySelectorAll('.my-card').forEach(c => { c.className = 'my-card empty'; c.innerHTML = ''; });
   playWin();
   const names = winnerNames.join(' & ');
   const isSplit = winnerNames.length > 1;
@@ -258,8 +289,14 @@ function renderSeats(players, myId, currentPlayerId) {
   const count = players.length;
   const rx = 72, ry = 85;
 
+  // Find my index so I always appear at the bottom
+  const myIndex = players.findIndex(p => p.id === myId);
+
   players.forEach((player, index) => {
-    const angle = (index / count) * 2 * Math.PI + Math.PI / 2;
+    // Offset angle so current player is always at bottom
+    const offset = myIndex >= 0 ? myIndex : 0;
+    const adjustedIndex = (index - offset + count) % count;
+    const angle = (adjustedIndex / count) * 2 * Math.PI + Math.PI / 2;
     const left  = 50 + rx * Math.cos(angle);
     const top   = 50 + ry * Math.sin(angle);
 
@@ -413,7 +450,7 @@ document.getElementById('callBtn').addEventListener('click', () => {
 });
 
 document.getElementById('raiseBtn').addEventListener('click', () => {
-  const amount = parseInt(document.getElementById('raiseAmount').value);
+  const amount = parseInt(raiseSlider.value);
   if (!amount || amount <= 0) { alert('Enter a valid raise amount!'); return; }
   playChip();
   socket.emit('playerAction', { action: 'raise', amount });
