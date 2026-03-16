@@ -25,10 +25,12 @@
 
       <div id="topBar">
         <span id="roundLabel">Pre-Game</span>
-        <span id="potLabel">Pot: 0</span>
-        <div id="blindTimerDisplay">
-          <span class="blind-current">Blinds: 25/50</span>
-          <span class="blind-next">Loading...</span>
+        <div id="topBarRight">
+          <span id="potLabel">Pot: 0</span>
+          <div id="blindTimerDisplay">
+            <span class="blind-current">Blinds: 25/50</span>
+            <span class="blind-next">Loading...</span>
+          </div>
         </div>
       </div>
 
@@ -51,14 +53,21 @@
           <div class="my-card empty"></div>
         </div>
         <div id="actionButtons" class="hidden">
-          <button id="foldBtn"  class="action-btn fold">Fold</button>
-          <button id="checkBtn" class="action-btn check">Check</button>
-          <button id="callBtn"  class="action-btn call">Call</button>
-          <div id="raiseContainer">
-            <input type="number" id="raiseAmount" placeholder="Amount" min="1" />
-            <button id="raiseBtn" class="action-btn raise">Raise</button>
+          <div id="raiseSliderContainer">
+            <div id="raiseAmountDisplay">Raise: 0</div>
+            <input type="range" id="raiseSlider" min="50" max="5000" value="50" step="10" />
+            <div id="sliderLabels">
+              <span id="sliderMin">Min: 50</span>
+              <span id="sliderMax">Max: 5,000</span>
+            </div>
           </div>
-          <button id="allInBtn" class="action-btn allin">All In</button>
+          <div id="actionBtns">
+            <button id="foldBtn"  class="action-btn fold">Fold</button>
+            <button id="checkBtn" class="action-btn check">Check</button>
+            <button id="callBtn"  class="action-btn call">Call</button>
+            <button id="raiseBtn" class="action-btn raise">Raise</button>
+            <button id="allInBtn" class="action-btn allin">All In</button>
+          </div>
         </div>
       </div>
 
@@ -66,13 +75,6 @@
         <div id="gameLogTitle">Game Log</div>
         <ul id="gameLogList"></ul>
       </div>
-
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="game.js"></script>
-  </body>
-</html>
 
     </div>
 
