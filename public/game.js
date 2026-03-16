@@ -148,7 +148,19 @@ socket.on('gameState', ({ players, communityCards, pot, currentPlayerId, current
   renderSeats(players, myId, currentPlayerId);
 
   const me = players.find(p => p.id === myId);
-  if (me && me.cards) renderMyCards(me.cards);
+  if (me && me.cards) {
+    // Reset cards before rendering new ones
+    document.querySelectorAll('.my-card').forEach(c => {
+      c.className = 'my-card empty';
+      c.innerHTML = '';
+    });
+    document.querySelectorAll('.community-card').forEach(c => {
+      c.className = 'community-card empty';
+      c.innerHTML = '';
+    });
+    renderMyCards(me.cards);
+  }
+
   renderCommunityCards(communityCards);
 
   const isMyTurn = currentPlayerId === myId;
@@ -211,6 +223,16 @@ socket.on('turnTimer', ({ timeLeft, playerId }) => {
 
 // ─── Round Over ───────────────────────────────────────────
 socket.on('roundOver', ({ winnerIds, winnerNames, pot, showdown }) => {
+  // Reset all cards for next round
+  document.querySelectorAll('.community-card').forEach(c => {
+    c.className = 'community-card empty';
+    c.innerHTML = '';
+  });
+  document.querySelectorAll('.my-card').forEach(c => {
+    c.className = 'my-card empty';
+    c.innerHTML = '';
+  });
+
   playWin();
   const names = winnerNames.join(' & ');
   const isSplit = winnerNames.length > 1;
