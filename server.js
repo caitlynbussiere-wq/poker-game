@@ -24,7 +24,7 @@ let needToAct = [];
 let turnTimer = null;
 let sbIndex = 0;
 let bbIndex = 0;
-const TURN_TIME = 20;
+const TURN_TIME = 30;
 
 // ─── Blind Structure ─────────────────────────────────────
 const blindLevels = [
@@ -300,11 +300,13 @@ function handleAction(socket, action, amount) {
     pots.forEach(pot => { pot.eligibleIds = pot.eligibleIds.filter(id => id !== socket.id); });
     needToAct = needToAct.filter(id => id !== socket.id);
     io.emit('logMessage', { msg: `${player.name} folded`, type: 'log-fold' });
+    io.emit('playerActionNotif', { playerId: player.id, text: 'Folded', type: 'fold' });
 
   } else if (action === 'check') {
     if (player.bet < currentBet) { socket.emit('errorMsg', `You must call ${currentBet - player.bet} or raise!`); return; }
     needToAct = needToAct.filter(id => id !== socket.id);
     io.emit('logMessage', { msg: `${player.name} checked`, type: 'log-action' });
+    io.emit('playerActionNotif', { playerId: player.id, text: 'Checked', type: 'check' });
 
   } else if (action === 'call') {
     const callAmount = Math.min(currentBet - player.bet, player.chips);
@@ -313,9 +315,11 @@ function handleAction(socket, action, amount) {
     if (player.chips === 0) player.allIn = true;
     needToAct = needToAct.filter(id => id !== socket.id);
     io.emit('logMessage', { msg: `${player.name} called ${callAmount}`, type: 'log-action' });
+    io.emit('playerActionNotif', { playerId: player.id, text: `Called ${callAmount}`, type: 'call' });
 
   } else if (action === 'raise') {
     const raiseTotal = parseInt(amount);
+    if (raiseTotal < getBigBlind()) { socket.emit('errorMsg', `Raise must be at least ${getBigBlind()}`); return; }
     if (raiseTotal <= currentBet) { socket.emit('errorMsg', `Raise must be more than ${currentBet}`); return; }
     const diff = Math.min(raiseTotal - player.bet, player.chips);
     player.chips -= diff; player.bet += diff;
@@ -324,6 +328,7 @@ function handleAction(socket, action, amount) {
     if (player.chips === 0) player.allIn = true;
     needToAct = getActablePlayers().filter(p => p.id !== socket.id).map(p => p.id);
     io.emit('logMessage', { msg: `${player.name} raised to ${player.bet}`, type: 'log-action' });
+    io.emit('playerActionNotif', { playerId: player.id, text: `Raised ${player.bet}`, type: 'raise' });
 
   } else if (action === 'allin') {
     const allInAmount = player.chips;
@@ -336,6 +341,7 @@ function handleAction(socket, action, amount) {
       needToAct = needToAct.filter(id => id !== socket.id);
     }
     io.emit('logMessage', { msg: `${player.name} went ALL IN (${allInAmount})`, type: 'log-action' });
+    io.emit('playerActionNotif', { playerId: player.id, text: `All In! ${allInAmount}`, type: 'allin' });
   }
 
   const activePlayers = getActivePlayers();
@@ -368,10 +374,10 @@ function advanceRound() {
   const actable = getActablePlayers();
   if (actable.length <= 1) { runOutBoard(); return; }
 
-  if (round === 'preflop')      { round = 'flop';  communityCards.push(deck.pop(), deck.pop(), deck.pop()); }
-  else if (round === 'flop')    { round = 'turn';  communityCards.push(deck.pop()); }
-  else if (round === 'turn')    { round = 'river'; communityCards.push(deck.pop()); }
-  else if (round === 'river')   { round = 'showdown'; endRound(); return; }
+  if (round === 'preflop')    { round = 'flop';  communityCards.push(deck.pop(), deck.pop(), deck.pop()); }
+  else if (round === 'flop')  { round = 'turn';  communityCards.push(deck.pop()); }
+  else if (round === 'turn')  { round = 'river'; communityCards.push(deck.pop()); }
+  else if (round === 'river') { round = 'showdown'; endRound(); return; }
 
   let firstIndex = (dealerIndex + 1) % players.length;
   let tries = 0;
@@ -479,5 +485,4 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(process.env.PORT || 3000, () => console.log(`Server running on port ${process.env.PORT || 3000}`));
