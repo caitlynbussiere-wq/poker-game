@@ -54,8 +54,11 @@ p  { color: #a0b8a0; margin-bottom: 24px; }
   width: 100%; display: flex; justify-content: space-between; align-items: center;
   padding: 10px 20px; background-color: #2d4a2d;
   border-radius: 10px; border: 2px solid #8b7536;
-  color: #d4af37; font-size: 1.1rem;
+  color: #d4af37;
 }
+#roundLabel { font-size: 1.1rem; color: #d4af37; }
+#topBarRight { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+#potLabel { color: #d4af37; font-size: 1.4rem; font-weight: bold; font-family: Georgia, serif; }
 #blindTimerDisplay { display: flex; flex-direction: column; align-items: flex-end; font-size: 0.8rem; gap: 2px; }
 .blind-current { color: #d4af37; font-weight: bold; }
 .blind-next    { color: #a0b8a0; font-size: 0.75rem; }
@@ -97,9 +100,11 @@ p  { color: #a0b8a0; margin-bottom: 24px; }
 /* ─── Seats ─────────────────────────────────────────────── */
 #seats { position: absolute; width: 100%; height: 100%; }
 .seat-wrap {
-  position: absolute; display: flex; align-items: center; gap: 6px;
+  position: absolute; display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
   transform: translate(-50%, -50%);
 }
+.seat-row { display: flex; align-items: center; gap: 6px; }
 .seat {
   background: rgba(0,0,0,0.45); border-radius: 8px;
   border: 1px solid transparent; padding: 6px 10px;
@@ -122,6 +127,24 @@ p  { color: #a0b8a0; margin-bottom: 24px; }
 .seat-chips { color: #a0b8a0; font-size: 0.68rem; }
 .seat-bet   { color: #f0f0f0; font-size: 0.63rem; }
 .seat-allin { color: #cc4444; font-size: 0.63rem; letter-spacing: 0.5px; }
+
+/* Action notification above seat */
+.action-notif {
+  background: rgba(0,0,0,0.85); border: 1px solid #d4af37;
+  border-radius: 6px; padding: 3px 8px;
+  color: #d4af37; font-size: 0.7rem; font-weight: bold;
+  white-space: nowrap; font-family: Georgia, serif;
+  animation: fadeUp 0.3s ease-out;
+}
+.action-notif.fold  { border-color: #888; color: #888; }
+.action-notif.call  { border-color: #6aaa6a; color: #6aaa6a; }
+.action-notif.raise { border-color: #d4af37; color: #d4af37; }
+.action-notif.check { border-color: #4a4a8b; color: #8888cc; }
+.action-notif.allin { border-color: #cc4444; color: #cc4444; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* Blind badges */
 .blind-badge {
@@ -156,7 +179,7 @@ p  { color: #a0b8a0; margin-bottom: 24px; }
 /* ─── Bottom Bar ────────────────────────────────────────── */
 #bottomBar {
   width: 100%; display: flex; justify-content: center; align-items: center;
-  gap: 30px; padding: 10px 20px; background-color: #2d4a2d;
+  gap: 20px; padding: 10px 20px; background-color: #2d4a2d;
   border-radius: 10px; border: 2px solid #8b7536;
 }
 #myCards { display: flex; gap: 12px; }
@@ -211,9 +234,30 @@ p  { color: #a0b8a0; margin-bottom: 24px; }
 }
 
 /* ─── Action Buttons ────────────────────────────────────── */
-#actionButtons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+#actionButtons {
+  display: flex; flex-direction: column; gap: 8px;
+  align-items: center; flex: 1;
+}
+
+#raiseSliderContainer {
+  width: 100%; display: flex; flex-direction: column; gap: 4px;
+}
+#raiseAmountDisplay {
+  text-align: center; color: #d4af37; font-size: 1rem;
+  font-weight: bold; font-family: Georgia, serif;
+}
+#raiseSlider {
+  width: 100%; accent-color: #d4af37; cursor: pointer; height: 6px;
+}
+#sliderLabels {
+  display: flex; justify-content: space-between;
+  font-size: 0.7rem; color: #a0b8a0; font-family: Georgia, serif;
+}
+
+#actionBtns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+
 .action-btn {
-  padding: 10px 20px; font-size: 1rem; border: none; border-radius: 8px;
+  padding: 10px 18px; font-size: 0.95rem; border: none; border-radius: 8px;
   cursor: pointer; font-family: 'Georgia', serif; font-weight: bold; letter-spacing: 1px;
 }
 .action-btn.fold  { background-color: #8b2020; color: #fff; }
@@ -226,12 +270,6 @@ p  { color: #a0b8a0; margin-bottom: 24px; }
 .action-btn.raise:hover { background-color: #d4af37; color: #1a2e1a; }
 .action-btn.allin { background-color: #8b2020; color: #fff; border: 2px solid #d4af37; }
 .action-btn.allin:hover { background-color: #cc0000; border-color: #f0d060; }
-#raiseContainer { display: flex; gap: 6px; align-items: center; }
-#raiseAmount {
-  width: 90px; padding: 8px; border-radius: 6px;
-  border: 2px solid #8b7536; background-color: #1a2e1a;
-  color: #f0f0f0; font-size: 0.95rem; text-align: center;
-}
 
 /* ─── Card Animations ───────────────────────────────────── */
 @keyframes dealCard {
@@ -249,7 +287,7 @@ p  { color: #a0b8a0; margin-bottom: 24px; }
 /* ─── Game Log ──────────────────────────────────────────── */
 #gameLog {
   position: fixed; right: 12px; top: 50%; transform: translateY(-50%);
-  width: 200px; max-height: 400px; background-color: #2d4a2d;
+  width: 220px; max-height: 500px; background-color: #2d4a2d;
   border: 2px solid #8b7536; border-radius: 12px;
   padding: 10px; overflow: hidden;
   display: flex; flex-direction: column; z-index: 10;
